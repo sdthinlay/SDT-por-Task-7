@@ -1,7 +1,9 @@
+
 from flask import Flask, redirect, url_for, session
 from authlib.integrations.flask_client import OAuth
 import paho.mqtt.publish as publish
 from flask_cors import CORS
+
 
 app = Flask(__name__)
 app.secret_key = 'FKLADSJFKADS'
@@ -25,10 +27,9 @@ github = oauth.register(
 @app.route('/')
 def hello_world():
     if 'user_name' not in session:
-        return f'Hello, stranger'
+        return '<h1>Hello, stranger</h1><a href="/login">Log In</a>'
     else:
-        return f'Hello, {session["user_name"]}'
-
+        return f'<h1>Hello, {session["user_name"]}</h1><a href="/logout">Log Out</a>'
 
 @app.route('/login')
 def login():
