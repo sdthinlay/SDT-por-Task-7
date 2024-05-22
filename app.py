@@ -1,4 +1,3 @@
-
 from flask import Flask, redirect, url_for, session
 from authlib.integrations.flask_client import OAuth
 import paho.mqtt.publish as publish
@@ -22,7 +21,8 @@ github = oauth.register(
     refresh_token_url=None,
     client_kwargs={'scope': 'user:email'},
 )
-
+MQTT_BROKER_ADDRESS = 'broker.emqx.io'  # Update with your MQTT broker address
+MQTT_TOPIC = 'test'  # Update with your desired MQTT topic
 
 @app.route('/')
 def hello_world():
@@ -31,11 +31,21 @@ def hello_world():
     else:
         return f'<h1>Hello, {session["user_name"]}</h1><a href="/logout">Log Out</a>'
 
+
 @app.route('/login')
 def login():
     redirect_uri = url_for('authorize', _external=True)
     return github.authorize_redirect(redirect_uri)
 
+@app.route('/logout')
+def logout():
+    # Publish a message to the MQTT broker upon logout
+    if 'user_name' in session:
+        message = f"User {session['user_name']} has logged out"
+        publish.single(MQTT_TOPIC, message, hostname=MQTT_BROKER_ADDRESS)
+    session.pop('user_name', None)
+
+    return redirect(url_for('hello_world'))
 
 @app.route('/authorize')
 def authorize():
@@ -44,4 +54,6 @@ def authorize():
     resp.raise_for_status()
     profile = resp.json()
     session['user_name'] = profile['login']
+    message = f"User {session['user_name']} has logged in"
+    publish.single(MQTT_TOPIC, message, hostname=MQTT_BROKER_ADDRESS)
     return redirect('/')
